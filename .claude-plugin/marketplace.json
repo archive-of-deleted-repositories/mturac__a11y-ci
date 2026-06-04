@@ -1,0 +1,22 @@
+{
+  "name": "a11y-ci",
+  "version": "0.1.0",
+  "author": "mturac",
+  "description": "Automated accessibility audits for components — detects WCAG violations in-source, annotates with line numbers, and suggests fixes with code snippets.",
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "wcag",
+    "aria",
+    "screen-reader",
+    "html",
+    "react"
+  ],
+  "license": "MIT",
+  "repository": "",
+  "categories": [
+    "accessibility",
+    "code-quality",
+    "linting"
+  ]
+}

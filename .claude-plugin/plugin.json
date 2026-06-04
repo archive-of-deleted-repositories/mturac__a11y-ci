@@ -1,0 +1,19 @@
+{
+  "name": "a11y-ci",
+  "version": "0.1.0",
+  "author": {
+    "name": "mturac"
+  },
+  "description": "Automated accessibility audits for components \u2014 detects WCAG violations in-source, annotates with line numbers, and suggests fixes with code snippets.",
+  "skills": [
+    "skills/a11y-audit",
+    "skills/a11y-fix",
+    "skills/a11y-baseline"
+  ],
+  "commands": [
+    "commands/a11y-ci.md",
+    "commands/a11y-ci-audit.md",
+    "commands/a11y-ci-fix.md",
+    "commands/a11y-ci-baseline.md"
+  ]
+}

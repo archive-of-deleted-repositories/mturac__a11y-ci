@@ -1,0 +1,150 @@
+name: a11y-ci Plugin Validation
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-plugin:
+    name: Validate Plugin Structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate plugin.json
+        run: |
+          echo "Validating .claude-plugin/plugin.json..."
+          python3 - <<'EOF'
+          import json, sys
+
+          with open(".claude-plugin/plugin.json") as f:
+              plugin = json.load(f)
+
+          required_fields = ["name", "version", "author", "description", "skills", "commands"]
+          missing = [field for field in required_fields if field not in plugin]
+          if missing:
+              print(f"ERROR: plugin.json missing fields: {missing}")
+              sys.exit(1)
+
+          if not isinstance(plugin["skills"], list) or len(plugin["skills"]) == 0:
+              print("ERROR: plugin.json 'skills' must be a non-empty array")
+              sys.exit(1)
+
+          if not isinstance(plugin["commands"], list) or len(plugin["commands"]) == 0:
+              print("ERROR: plugin.json 'commands' must be a non-empty array")
+              sys.exit(1)
+
+          print(f"OK: plugin.json valid — {plugin['name']} v{plugin['version']} by {plugin['author']}")
+          EOF
+
+      - name: Validate marketplace.json
+        run: |
+          echo "Validating .claude-plugin/marketplace.json..."
+          python3 - <<'EOF'
+          import json, sys
+
+          with open(".claude-plugin/marketplace.json") as f:
+              market = json.load(f)
+
+          required_fields = ["name", "version", "author", "description", "keywords"]
+          missing = [field for field in required_fields if field not in market]
+          if missing:
+              print(f"ERROR: marketplace.json missing fields: {missing}")
+              sys.exit(1)
+
+          if not isinstance(market["keywords"], list) or len(market["keywords"]) == 0:
+              print("ERROR: marketplace.json 'keywords' must be a non-empty array")
+              sys.exit(1)
+
+          print(f"OK: marketplace.json valid — keywords: {', '.join(market['keywords'])}")
+          EOF
+
+      - name: Validate skill files exist and have frontmatter
+        run: |
+          echo "Validating skill SKILL.md files..."
+          python3 - <<'EOF'
+          import json, os, sys
+
+          with open(".claude-plugin/plugin.json") as f:
+              plugin = json.load(f)
+
+          errors = []
+          for skill_path in plugin["skills"]:
+              if not os.path.exists(skill_path):
+                  errors.append(f"MISSING: {skill_path}")
+                  continue
+              with open(skill_path) as f:
+                  content = f.read()
+              if not content.startswith("---"):
+                  errors.append(f"NO FRONTMATTER: {skill_path}")
+                  continue
+              # Check frontmatter has name and description
+              fm_end = content.find("---", 3)
+              if fm_end == -1:
+                  errors.append(f"UNCLOSED FRONTMATTER: {skill_path}")
+                  continue
+              fm = content[3:fm_end]
+              if "name:" not in fm:
+                  errors.append(f"FRONTMATTER missing 'name': {skill_path}")
+              if "description:" not in fm:
+                  errors.append(f"FRONTMATTER missing 'description': {skill_path}")
+              if not errors or errors[-1].startswith("MISSING"):
+                  print(f"OK: {skill_path}")
+
+          if errors:
+              for e in errors:
+                  print(f"ERROR: {e}")
+              sys.exit(1)
+          EOF
+
+      - name: Validate command files exist and have frontmatter
+        run: |
+          echo "Validating command files..."
+          python3 - <<'EOF'
+          import json, os, sys
+
+          with open(".claude-plugin/plugin.json") as f:
+              plugin = json.load(f)
+
+          errors = []
+          for cmd_path in plugin["commands"]:
+              if not os.path.exists(cmd_path):
+                  errors.append(f"MISSING: {cmd_path}")
+                  continue
+              with open(cmd_path) as f:
+                  content = f.read()
+              if not content.startswith("---"):
+                  errors.append(f"NO FRONTMATTER: {cmd_path}")
+                  continue
+              fm_end = content.find("---", 3)
+              if fm_end == -1:
+                  errors.append(f"UNCLOSED FRONTMATTER: {cmd_path}")
+                  continue
+              fm = content[3:fm_end]
+              if "name:" not in fm:
+                  errors.append(f"FRONTMATTER missing 'name': {cmd_path}")
+              if "description:" not in fm:
+                  errors.append(f"FRONTMATTER missing 'description': {cmd_path}")
+              if not errors or errors[-1].startswith("MISSING"):
+                  print(f"OK: {cmd_path}")
+
+          if errors:
+              for e in errors:
+                  print(f"ERROR: {e}")
+              sys.exit(1)
+          EOF
+
+      - name: Check README exists
+        run: |
+          if [ ! -f "README.md" ]; then
+            echo "ERROR: README.md is missing"
+            exit 1
+          fi
+          echo "OK: README.md present"
+
+      - name: Summary
+        run: echo "All plugin validation checks passed."
